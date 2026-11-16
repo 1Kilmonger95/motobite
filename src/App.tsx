@@ -1,4 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, RequireAdmin } from "./lib/auth";
+import Login from "./features/admin/Login";
+import AdminLayout from "./features/admin/AdminLayout";
+import Dashboard from "./features/admin/Dashboard";
+import ChipList from "./features/admin/ChipList";
+import ChipNew from "./features/admin/ChipNew";
+import ChipDetail from "./features/admin/ChipDetail";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -10,11 +17,26 @@ function Placeholder({ title }: { title: string }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/admin/*" element={<Placeholder title="Panel administrativo (Etapa 3)" />} />
-      <Route path="/a/:token" element={<Placeholder title="Activación (Etapa 5)" />} />
-      <Route path="/library" element={<Placeholder title="Mis documentos (Etapa 7)" />} />
-      <Route path="*" element={<Navigate to="/library" replace />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/admin/login" element={<Login />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminLayout />
+            </RequireAdmin>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="chips" element={<ChipList />} />
+          <Route path="chips/new" element={<ChipNew />} />
+          <Route path="chips/:id" element={<ChipDetail />} />
+        </Route>
+        <Route path="/a/:token" element={<Placeholder title="Activación (Etapa 5)" />} />
+        <Route path="/library" element={<Placeholder title="Mis documentos (Etapa 7)" />} />
+        <Route path="*" element={<Navigate to="/library" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
