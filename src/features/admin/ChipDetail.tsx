@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { effectiveStatus, formatDate, STATUS_LABEL, STATUS_STYLE } from "../../lib/status";
+import { formatDate } from "../../lib/status";
 import { friendlyError } from "../../lib/errors";
 import type { Chip, DeviceRow, TokenRow } from "../../lib/types";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
 import ChipForm from "./ChipForm";
+import ActivationPanel from "./ActivationPanel";
 
 export default function ChipDetail() {
   const { id } = useParams();
@@ -67,6 +68,18 @@ export default function ChipDetail() {
     else setChip(data as Chip);
   }
 
+  async function refreshTokens() {
+    if (!id) return;
+    const { data, error: err } = await supabase
+      .from("activation_tokens")
+      .select("id, chip_id, status, expires_at, reserved_until, consumed_at, created_at")
+      .eq("chip_id", id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (err) setError(friendlyError(err));
+    else setTokens((data ?? []) as TokenRow[]);
+  }
+
   if (loading) return <Spinner />;
 
   return (
@@ -119,27 +132,7 @@ export default function ChipDetail() {
             )}
           </div>
 
-          <div className="card">
-            <h2 className="mb-1 text-lg font-semibold">Enlaces de activación</h2>
-            <p className="mb-3 text-sm text-slate-500">
-              La emisión de enlaces y códigos QR se habilita en la Etapa 4.
-            </p>
-            {tokens.length === 0 ? (
-              <p className="text-sm text-slate-500">Este chip aún no tiene enlaces.</p>
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {tokens.map((t) => {
-                  const st = effectiveStatus(t);
-                  return (
-                    <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                      <Badge className={STATUS_STYLE[st]}>{STATUS_LABEL[st]}</Badge>
-                      <span className="text-slate-500">Vence: {formatDate(t.expires_at)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <ActivationPanel chip={chip} tokens={tokens} onChanged={refreshTokens} />
 
           <div className="card">
             <h2 className="mb-3 text-lg font-semibold">Dispositivos activados</h2>
