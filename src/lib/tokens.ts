@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 type CallResult = { ok: true; data: Record<string, unknown> } | { ok: false; error: string };
 
 const NETWORK =
-  "No se pudo contactar la función. Revisa tu Internet y que «admin-tokens» esté desplegada en Supabase.";
+  "No se pudo contactar la función. Revisa tu Internet y que «swift-service» esté desplegada en Supabase.";
 
 function explain(code: string, status: number): string {
   if (code === "chip_inactive") return "El chip está desactivado. Actívalo para emitir enlaces.";
@@ -13,13 +13,13 @@ function explain(code: string, status: number): string {
   if (status === 401) {
     return "La función rechazó la sesión. Cierra sesión, entra de nuevo y reintenta.";
   }
-  if (status === 404) return "La función «admin-tokens» no está desplegada en Supabase.";
+  if (status === 404) return "La función «swift-service» no está desplegada en Supabase.";
   return "Ocurrió un error inesperado. Inténtalo de nuevo.";
 }
 
 async function call(body: Record<string, unknown>): Promise<CallResult> {
   try {
-    const { data, error } = await supabase.functions.invoke("admin-tokens", { body });
+    const { data, error } = await supabase.functions.invoke("swift-service", { body });
     if (error) {
       const ctx = (error as { context?: unknown }).context;
       if (ctx instanceof Response) {
