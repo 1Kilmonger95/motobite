@@ -7,11 +7,12 @@ import {
   type BlockedReason,
   type ReserveOk
 } from "../../lib/activation";
+import { deletePendingByActivation } from "../../lib/idb";
 import { clearReservation, readReservation, saveReservation } from "../../lib/reservation";
 import { formatDate, STATUS_STYLE } from "../../lib/status";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
 import { ClientShell } from "./ClientShell";
-import { Countdown } from "./Countdown";
+import SavePanel from "./SavePanel";
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 
@@ -53,6 +54,7 @@ const BLOCKED: Record<BlockedReason, { title: string; body: string }> = {
 
 export default function ActivationPage() {
   const { token = "" } = useParams();
+  const activationKey = token.slice(0, 16);
   const [view, setView] = useState<View>({ kind: "loading" });
 
   const load = useCallback(async () => {
@@ -78,11 +80,17 @@ export default function ActivationPage() {
     }
 
     const s = await getStatus(token);
-    if (s.kind === "error") setView({ kind: "error", message: s.message });
-    else if (s.kind === "blocked") setView({ kind: "blocked", reason: s.reason });
-    else if (!s.chipActive) setView({ kind: "blocked", reason: "chip_inactive" });
-    else setView({ kind: "ready", name: s.name, description: s.description, expiresAt: s.expiresAt });
-  }, [token]);
+    if (s.kind === "error") {
+      setView({ kind: "error", message: s.message });
+    } else if (s.kind === "blocked") {
+      if (s.reason !== "reserved_by_other") void deletePendingByActivation(activationKey).catch(() => undefined);
+      setView({ kind: "blocked", reason: s.reason });
+    } else if (!s.chipActive) {
+      setView({ kind: "blocked", reason: "chip_inactive" });
+    } else {
+      setView({ kind: "ready", name: s.name, description: s.description, expiresAt: s.expiresAt });
+    }
+  }, [token, activationKey]);
 
   useEffect(() => {
     void load();
@@ -101,11 +109,24 @@ export default function ActivationPage() {
     }
   }
 
-  async function cancel(info: ReserveOk) {
-    await releaseActivation(token, info.reservationId);
-    clearReservation(token);
-    await load();
-  }
+  const cancel = useCallback(
+    async (info: ReserveOk) => {
+      await releaseActivation(token, info.reservationId);
+      clearReservation(token);
+      await deletePendingByActivation(activationKey).catch(() => undefined);
+      await load();
+    },
+    [token, activationKey, load]
+  );
+
+  const onBlocked = useCallback(
+    (reason: BlockedReason) => {
+      clearReservation(token);
+      void deletePendingByActivation(activationKey).catch(() => undefined);
+      setView({ kind: "blocked", reason });
+    },
+    [token, activationKey]
+  );
 
   const onLapsed = useCallback(() => {
     clearReservation(token);
@@ -115,7 +136,6 @@ export default function ActivationPage() {
   return (
     <ClientShell>
       {view.kind === "loading" && <Spinner />}
-
       {view.kind === "reserving" && <Spinner label="Preparando tu activación…" />}
 
       {view.kind === "error" && (
@@ -129,9 +149,7 @@ export default function ActivationPage() {
         <div className="card space-y-3 text-center">
           <h1 className="text-xl font-bold">{BLOCKED[view.reason].title}</h1>
           <p className="text-slate-600">{BLOCKED[view.reason].body}</p>
-          {view.reason === "consumed" && (
-            <Link to="/library" className="btn btn-primary w-full">Ver mis documentos</Link>
-          )}
+          {view.reason === "consumed" && <Link to="/library" className="btn btn-primary w-full">Ver mis documentos</Link>}
           {view.reason === "reserved_by_other" && (
             <button type="button" className="btn btn-primary w-full" onClick={() => void load()}>Reintentar</button>
           )}
@@ -141,9 +159,7 @@ export default function ActivationPage() {
       {view.kind === "lapsed" && (
         <div className="card space-y-3 text-center">
           <h1 className="text-xl font-bold">La reserva venció</h1>
-          <p className="text-slate-600">
-            Pasó demasiado tiempo sin terminar. Tu enlace no se consumió: puedes empezar de nuevo.
-          </p>
+          <p className="text-slate-600">Pasó demasiado tiempo sin terminar. Tu enlace no se consumió: puedes empezar de nuevo.</p>
           <button type="button" className="btn btn-primary w-full" onClick={() => void load()}>Empezar de nuevo</button>
         </div>
       )}
@@ -156,41 +172,29 @@ export default function ActivationPage() {
             {view.description && <p className="text-slate-600">{view.description}</p>}
             <p className="text-xs text-slate-500">Este enlace vence: {formatDate(view.expiresAt)}</p>
           </div>
-
           <div className="card space-y-3">
-            <h2 className="font-semibold">¿Cómo guardar tu documento?</h2>
+            <h2 className="font-semibold">Guarda tu documento en este teléfono</h2>
             <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
-              <li>Elige una opción.</li>
-              <li>MotoBite guardará el PDF dentro de tu teléfono.</li>
-              <li>Podrás abrirlo siempre, incluso sin Internet.</li>
+              <li>Pulsa «Comenzar» y elige cómo guardarlo.</li>
+              <li>MotoBite guarda el PDF dentro de tu teléfono y comprueba que quedó completo.</li>
+              <li>Después podrás abrirlo siempre, incluso sin Internet.</li>
             </ol>
-            <button type="button" className="btn btn-primary min-h-[64px] w-full text-base" onClick={() => void start()}>
-              Descargar desde Google Drive
+            <button type="button" className="btn btn-primary min-h-[56px] w-full text-base" onClick={() => void start()}>
+              Comenzar
             </button>
-            <button type="button" className="btn btn-secondary min-h-[64px] w-full text-base" onClick={() => void start()}>
-              Elegir un PDF de mi teléfono
-            </button>
-            <p className="text-xs text-slate-500">
-              Tu enlace no se consume hasta que el documento quede guardado y verificado en tu teléfono.
-            </p>
           </div>
         </>
       )}
 
       {view.kind === "reserved" && (
-        <div className="card space-y-4">
-          <Badge className="bg-blue-100 text-blue-800">Reserva activa</Badge>
-          <h1 className="text-2xl font-bold">{view.info.name}</h1>
-          <p className="text-sm text-slate-600">
-            Tu activación está reservada para este teléfono durante{" "}
-            <Countdown until={view.info.reservedUntil} onEnd={onLapsed} />. Tu enlace sigue sin consumirse.
-          </p>
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Aviso de desarrollo: el guardado del PDF (descarga desde Drive o selección de archivo) se habilita en la Etapa 6.
-          </div>
-          <button type="button" className="btn btn-secondary w-full" onClick={() => void cancel(view.info)}>
-            Cancelar y liberar la reserva
-          </button>
+        <div className="card">
+          <SavePanel
+            token={token}
+            info={view.info}
+            onBlocked={onBlocked}
+            onCancel={() => void cancel(view.info)}
+            onLapsed={onLapsed}
+          />
         </div>
       )}
     </ClientShell>

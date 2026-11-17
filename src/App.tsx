@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, RequireAdmin } from "./lib/auth";
 import Login from "./features/admin/Login";
@@ -7,14 +8,10 @@ import ChipList from "./features/admin/ChipList";
 import ChipNew from "./features/admin/ChipNew";
 import ChipDetail from "./features/admin/ChipDetail";
 import ActivationPage from "./features/activation/ActivationPage";
+import LibraryPage from "./features/library/LibraryPage";
+import { Spinner } from "./components/ui";
 
-function Placeholder({ title }: { title: string }) {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center justify-center p-6">
-      <h1 className="text-xl font-semibold">{title}</h1>
-    </main>
-  );
-}
+const ViewerPage = lazy(() => import("./features/library/ViewerPage"));
 
 export default function App() {
   return (
@@ -35,7 +32,8 @@ export default function App() {
           <Route path="chips/:id" element={<ChipDetail />} />
         </Route>
         <Route path="/a/:token" element={<ActivationPage />} />
-        <Route path="/library" element={<Placeholder title="Mis documentos (Etapa 7)" />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/library/:id" element={<Suspense fallback={<Spinner />}><ViewerPage /></Suspense>} />
         <Route path="*" element={<Navigate to="/library" replace />} />
       </Routes>
     </AuthProvider>

@@ -4,6 +4,7 @@ import type { Chip, TokenRow } from "../../lib/types";
 import { effectiveStatus, formatDate, STATUS_LABEL, STATUS_STYLE } from "../../lib/status";
 import { activationUrl, issueToken, revokeToken } from "../../lib/tokens";
 import { Badge, ErrorBox } from "../../components/ui";
+import NfcWriter from "./NfcWriter";
 
 const EXPIRY_OPTIONS = [
   { label: "24 horas", hours: 24 },
@@ -166,6 +167,8 @@ export default function ActivationPanel({ chip, tokens, onChanged }: Props) {
             </div>
             <button type="button" className="btn btn-primary" onClick={downloadQr}>Descargar QR (PNG)</button>
           </div>
+
+          <NfcWriter url={issued.url} />
         </div>
       )}
 

@@ -72,3 +72,33 @@ export async function reserveActivation(token: string, reservationId: string | n
 export async function releaseActivation(token: string, reservationId: string): Promise<void> {
   await callApi({ action: "release", token, reservation_id: reservationId });
 }
+
+export type ConfirmResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: "reservation_expired" | "invalid_reservation" | "consumed" | "revoked" | "expired" | "not_found" | "invalid_input" | "error";
+    };
+
+const CONFIRM_CODES = new Set(["reservation_expired", "invalid_reservation", "consumed", "revoked", "expired", "not_found", "invalid_input"]);
+
+export async function confirmActivation(
+  token: string,
+  reservationId: string,
+  installationId: string,
+  deviceLabel: string,
+  sourceType: "drive" | "local"
+): Promise<ConfirmResult> {
+  const r = await callApi({
+    action: "confirm",
+    token,
+    reservation_id: reservationId,
+    installation_id: installationId,
+    device_label: deviceLabel,
+    source_type: sourceType
+  });
+  if (!r.ok) return { ok: false, code: r.status === 400 ? "invalid_input" : "error" };
+  if (r.data.ok === true) return { ok: true };
+  const code = String(r.data.code ?? "");
+  return CONFIRM_CODES.has(code) ? { ok: false, code: code as Exclude<ConfirmResult, { ok: true }>["code"] } : { ok: false, code: "error" };
+}

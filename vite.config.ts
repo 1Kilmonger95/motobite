@@ -32,7 +32,8 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           // Solo se precachea el shell de la app. Los PDF viven en IndexedDB.
-          globPatterns: ["**/*.{js,css,html,png,svg,ico,webmanifest}"],
+          globPatterns: ["**/*.{js,mjs,css,html,png,svg,ico,webmanifest}"],
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           navigateFallback: `${base}index.html`,
           cleanupOutdatedCaches: true
         }
