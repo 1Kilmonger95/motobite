@@ -3,7 +3,10 @@ import { useAuth } from "../../lib/auth";
 
 const links = [
   { to: "/admin", label: "Panel", end: true },
-  { to: "/admin/chips", label: "Chips", end: false }
+  { to: "/admin/chips", label: "Chips", end: false },
+  { to: "/admin/activations", label: "Activaciones", end: false },
+  { to: "/admin/history", label: "Historial", end: false },
+  { to: "/admin/settings", label: "Configuración", end: false }
 ];
 
 export default function AdminLayout() {

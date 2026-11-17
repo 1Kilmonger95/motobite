@@ -21,11 +21,13 @@ export type ReserveResult = ReserveOk | { ok: false; code: BlockedReason | "erro
 
 const NET = "No se pudo conectar con MotoBite. Revisa tu Internet e inténtalo de nuevo.";
 const UNEXPECTED = "Ocurrió un error inesperado. Inténtalo de nuevo.";
+const RATE = "Demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.";
+const msgFor = (status: number) => (status === 0 ? NET : status === 429 ? RATE : UNEXPECTED);
 const BLOCKED = new Set<string>(["not_found", "expired", "revoked", "consumed", "chip_inactive", "reserved_by_other"]);
 
 export async function getStatus(token: string): Promise<StatusResult> {
   const r = await callApi({ action: "status", token });
-  if (!r.ok) return { kind: "error", message: r.status === 0 ? NET : UNEXPECTED };
+  if (!r.ok) return { kind: "error", message: msgFor(r.status) };
   const d = r.data;
   if (d.ok !== true) return { kind: "blocked", reason: "not_found" };
   switch (d.status) {
@@ -51,7 +53,7 @@ export async function getStatus(token: string): Promise<StatusResult> {
 
 export async function reserveActivation(token: string, reservationId: string | null): Promise<ReserveResult> {
   const r = await callApi({ action: "reserve", token, reservation_id: reservationId });
-  if (!r.ok) return { ok: false, code: "error", message: r.status === 0 ? NET : UNEXPECTED };
+  if (!r.ok) return { ok: false, code: "error", message: msgFor(r.status) };
   const d = r.data;
   if (d.ok === true) {
     return {
