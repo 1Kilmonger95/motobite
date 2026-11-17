@@ -6,6 +6,7 @@ import Dashboard from "./features/admin/Dashboard";
 import ChipList from "./features/admin/ChipList";
 import ChipNew from "./features/admin/ChipNew";
 import ChipDetail from "./features/admin/ChipDetail";
+import ActivationPage from "./features/activation/ActivationPage";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -33,7 +34,7 @@ export default function App() {
           <Route path="chips/new" element={<ChipNew />} />
           <Route path="chips/:id" element={<ChipDetail />} />
         </Route>
-        <Route path="/a/:token" element={<Placeholder title="Activación (Etapa 5)" />} />
+        <Route path="/a/:token" element={<ActivationPage />} />
         <Route path="/library" element={<Placeholder title="Mis documentos (Etapa 7)" />} />
         <Route path="*" element={<Navigate to="/library" replace />} />
       </Routes>
