@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { deleteDocument, listDocuments, verifyDocument, type DocMeta } from "../../lib/idb";
 import { formatBytes } from "../../lib/pdf";
 import { formatDate } from "../../lib/status";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
 import { ClientShell } from "../activation/ClientShell";
+import { isIos, isIosBrowserTab, isStandalone, parseActivationInput } from "../../lib/platform";
 
 type Check = "checking" | "ok" | "bad";
 
@@ -21,6 +22,45 @@ function useOnline(): boolean {
     };
   }, []);
   return online;
+}
+
+function PasteActivation() {
+  const navigate = useNavigate();
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+
+  function go() {
+    const token = parseActivationInput(text);
+    if (!token) {
+      setError("No reconocemos ese enlace. Pega el enlace completo que recibiste.");
+      return;
+    }
+    navigate(`/a/${token}`);
+  }
+
+  return (
+    <div className="card space-y-3">
+      <h2 className="font-semibold">Activar con un enlace</h2>
+      <p className="text-sm text-slate-600">Si copiaste un enlace de activación, pégalo aquí para continuar dentro de esta app.</p>
+      <input className="input" inputMode="url" placeholder="Pega aquí el enlace de activación" value={text}
+        onChange={(e) => { setText(e.target.value); setError(""); }} aria-label="Enlace de activación" />
+      <ErrorBox message={error} />
+
+      {isIosBrowserTab() && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Estás usando MotoBite en Safari: el iPhone puede borrar tus documentos si pasan varios días sin abrir el sitio.
+          Para protegerlos, instala MotoBite (Compartir → Añadir a pantalla de inicio). Los documentos guardados en Safari
+          no se pasan a la app instalada: tendrías que pedir una nueva activación.
+        </div>
+      )}
+      {isIos() && isStandalone() && (
+        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+          Esta app instalada guarda sus documentos aparte de Safari. Para activar uno nuevo, pega el enlace en «Activar con un enlace».
+        </div>
+      )}
+      <button type="button" className="btn btn-secondary w-full" onClick={go}>Continuar</button>
+    </div>
+  );
 }
 
 export default function LibraryPage() {
@@ -103,6 +143,8 @@ export default function LibraryPage() {
           </li>
         ))}
       </ul>
+
+      <PasteActivation />
 
       <p className="px-1 text-xs text-slate-500">
         Tus documentos viven solo en este teléfono. Si borras los datos del navegador, cambias de teléfono o el sistema

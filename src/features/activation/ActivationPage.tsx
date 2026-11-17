@@ -13,6 +13,8 @@ import { formatDate, STATUS_STYLE } from "../../lib/status";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
 import { ClientShell } from "./ClientShell";
 import SavePanel from "./SavePanel";
+import IosGuide from "./IosGuide";
+import { isIosBrowserTab } from "../../lib/platform";
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 
@@ -56,6 +58,8 @@ export default function ActivationPage() {
   const { token = "" } = useParams();
   const activationKey = token.slice(0, 16);
   const [view, setView] = useState<View>({ kind: "loading" });
+  const needsIosGuide = isIosBrowserTab();
+  const [ackSafari, setAckSafari] = useState(false);
 
   const load = useCallback(async () => {
     if (!TOKEN_RE.test(token)) {
@@ -172,6 +176,9 @@ export default function ActivationPage() {
             {view.description && <p className="text-slate-600">{view.description}</p>}
             <p className="text-xs text-slate-500">Este enlace vence: {formatDate(view.expiresAt)}</p>
           </div>
+          {needsIosGuide && !ackSafari ? (
+            <IosGuide onContinue={() => setAckSafari(true)} />
+          ) : (
           <div className="card space-y-3">
             <h2 className="font-semibold">Guarda tu documento en este teléfono</h2>
             <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
@@ -183,6 +190,7 @@ export default function ActivationPage() {
               Comenzar
             </button>
           </div>
+          )}
         </>
       )}
 
