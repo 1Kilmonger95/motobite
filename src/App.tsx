@@ -13,12 +13,14 @@ import Settings from "./features/admin/Settings";
 import ActivationPage from "./features/activation/ActivationPage";
 import LibraryPage from "./features/library/LibraryPage";
 import { Spinner } from "./components/ui";
+import PwaStatus from "./components/PwaStatus";
 
 const ViewerPage = lazy(() => import("./features/library/ViewerPage"));
 
 export default function App() {
   return (
     <AuthProvider>
+      <PwaStatus />
       <Routes>
         <Route path="/admin/login" element={<Login />} />
         <Route

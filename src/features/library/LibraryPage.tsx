@@ -5,6 +5,7 @@ import { formatBytes } from "../../lib/pdf";
 import { formatDate } from "../../lib/status";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
 import { ClientShell } from "../activation/ClientShell";
+import { useInstallPrompt } from "../../lib/install";
 import { isIos, isIosBrowserTab, isStandalone, parseActivationInput } from "../../lib/platform";
 
 type Check = "checking" | "ok" | "bad";
@@ -69,6 +70,7 @@ export default function LibraryPage() {
   const [checks, setChecks] = useState<Record<string, Check>>({});
   const [persisted, setPersisted] = useState<boolean | null>(null);
   const online = useOnline();
+  const { canInstall, install } = useInstallPrompt();
 
   const refresh = useCallback(async () => {
     try {
@@ -143,6 +145,14 @@ export default function LibraryPage() {
           </li>
         ))}
       </ul>
+
+      {canInstall && !isStandalone() && (
+        <div className="card space-y-3">
+          <h2 className="font-semibold">Instalar MotoBite</h2>
+          <p className="text-sm text-slate-600">Instálala para abrirla como una app y usarla sin conexión.</p>
+          <button type="button" className="btn btn-primary w-full" onClick={() => void install()}>Instalar</button>
+        </div>
+      )}
 
       <PasteActivation />
 

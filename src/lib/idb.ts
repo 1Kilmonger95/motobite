@@ -57,11 +57,17 @@ function classify(e: unknown): StorageError {
   return new StorageError("idb", "Error al usar el almacenamiento del navegador.");
 }
 
+// Pide almacenamiento persistente, pero NUNCA bloquea el guardado: algunos navegadores (Firefox) muestran un aviso
+// de permiso y no responden hasta que la persona decide, así que no se espera más de 1,5 s.
 async function requestPersistence(): Promise<void> {
   try {
-    if (navigator.storage?.persist && !(await navigator.storage.persisted?.())) {
-      await navigator.storage.persist();
-    }
+    if (!navigator.storage?.persist) return;
+    await Promise.race([
+      (async () => {
+        if (!(await navigator.storage.persisted?.())) await navigator.storage.persist();
+      })(),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500))
+    ]);
   } catch {
     /* es una petición de mejor esfuerzo */
   }
