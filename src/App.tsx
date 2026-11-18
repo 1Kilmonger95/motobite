@@ -16,6 +16,7 @@ import { Spinner } from "./components/ui";
 import PwaStatus from "./components/PwaStatus";
 
 const ViewerPage = lazy(() => import("./features/library/ViewerPage"));
+const ScanPage = lazy(() => import("./features/scan/ScanPage"));
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="/a/:token" element={<ActivationPage />} />
+        <Route path="/scan" element={<Suspense fallback={<Spinner />}><ScanPage /></Suspense>} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/library/:id" element={<Suspense fallback={<Spinner />}><ViewerPage /></Suspense>} />
         <Route path="*" element={<Navigate to="/library" replace />} />

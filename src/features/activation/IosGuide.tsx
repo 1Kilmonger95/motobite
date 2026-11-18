@@ -26,7 +26,7 @@ export default function IosGuide({ onContinue }: { onContinue: () => void }) {
       <ol className="list-decimal space-y-2 pl-5 text-sm text-slate-700">
         <li>Pulsa «Copiar enlace de activación».</li>
         <li>Toca el botón Compartir de Safari y elige <strong>Añadir a pantalla de inicio</strong>.</li>
-        <li>Abre MotoBite desde tu pantalla de inicio, entra a <strong>Mis documentos</strong> y pega el enlace en «Activar con un enlace».</li>
+        <li>Abre MotoBite desde tu pantalla de inicio, entra a <strong>Mis documentos</strong> y pulsa <strong>Escanear código QR</strong> (o pega el enlace en «Activar con un enlace»).</li>
       </ol>
       <button type="button" className="btn btn-primary w-full" onClick={() => void copy()}>
         {copied ? "¡Enlace copiado!" : "Copiar enlace de activación"}

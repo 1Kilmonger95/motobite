@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { nfcSupported, verifyUrl, writeUrl } from "../../lib/nfc";
 import { ErrorBox } from "../../components/ui";
 
@@ -13,18 +13,22 @@ type State =
 // Oculta el token al mostrar lo que contiene un chip distinto.
 const hideToken = (u: string) => u.replace(/(#\/a\/).+$/, "$1…");
 
-export default function NfcWriter({ url }: { url: string }) {
+// autoStart: empieza a grabar en cuanto aparece (se usa justo después de generar el enlace).
+export default function NfcWriter({ url, autoStart = false }: { url: string; autoStart?: boolean }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const abortRef = useRef<AbortController | null>(null);
+  const started = useRef(false);
 
-  if (!nfcSupported()) {
-    return (
-      <div className="rounded-lg bg-white p-3 text-sm text-slate-600">
-        Este navegador no puede grabar chips NFC. Para grabar desde MotoBite abre el panel en <strong>Chrome para
-        Android</strong> con el NFC activado. Mientras tanto, copia el enlace y escríbelo con una app como NFC Tools.
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (autoStart && !started.current && nfcSupported()) {
+      started.current = true;
+      void write();
+    }
+    return () => abortRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!nfcSupported()) return null;
 
   async function write() {
     const ctrl = new AbortController();
@@ -48,13 +52,12 @@ export default function NfcWriter({ url }: { url: string }) {
 
   return (
     <div className="space-y-3 rounded-lg bg-white p-4">
-      <h3 className="font-semibold">Grabar en un chip NFC</h3>
+      <h3 className="font-semibold">Chip NFC</h3>
 
       {state.kind === "idle" && (
         <>
           <p className="text-sm text-slate-600">
-            Se reemplaza lo que tenga el chip. Cuando Chrome lo pida, acerca la parte trasera del teléfono al chip y
-            mantenlo quieto hasta que diga que terminó.
+            Se reemplaza lo que tenga el chip. Acerca la parte trasera del teléfono al chip y mantenlo quieto hasta que diga que terminó.
           </p>
           {url.length > 120 && (
             <p className="text-sm text-amber-700">El enlace es largo ({url.length} caracteres): un chip NTAG213 podría no tener capacidad suficiente.</p>
@@ -107,7 +110,7 @@ export default function NfcWriter({ url }: { url: string }) {
       {state.kind === "error" && (
         <>
           <ErrorBox message={state.message} />
-          <button type="button" className="btn btn-secondary w-full" onClick={() => setState({ kind: "idle" })}>Volver a intentar</button>
+          <button type="button" className="btn btn-primary w-full" onClick={() => void write()}>Reintentar grabación</button>
         </>
       )}
     </div>

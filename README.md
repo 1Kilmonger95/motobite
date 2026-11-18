@@ -8,8 +8,8 @@ Supabase solo guarda chips, huellas (hash) de los enlaces, estados y el historia
 
 ## Cómo funciona
 1. El administrador registra un chip con el enlace de Drive del PDF y genera un enlace de activación (token de 256 bits, un solo uso, con vencimiento).
-2. Lo graba en el chip NFC (botón «Grabar en chip NFC» en Chrome para Android) o entrega el QR.
-3. El cliente abre el enlace, elige o descarga el PDF; MotoBite lo guarda en IndexedDB, lo relee y comprueba tamaño y SHA-256.
+2. Graba el chip NFC desde el propio panel (botón «Grabar chip NFC», en Chrome para Android) y entrega también el QR (descargable o en una tarjeta imprimible). El cliente usa el que prefiera.
+3. El cliente acerca el teléfono al chip o escanea el QR (con la cámara o con «Escanear código QR» dentro de MotoBite, útil en teléfonos sin NFC y en la app instalada del iPhone). Abre el enlace, elige o descarga el PDF; MotoBite lo guarda en IndexedDB, lo relee y comprueba tamaño y SHA-256.
 4. Solo entonces el servidor confirma y consume el enlace. Si algo falla antes, el enlace no se consume.
 
 ## Puesta en marcha

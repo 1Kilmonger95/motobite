@@ -11,6 +11,16 @@ export function nfcSupported(): boolean {
   return "NDEFReader" in globalThis && g.isSecureContext !== false;
 }
 
+// Explica por qué este navegador no puede grabar chips (o null si sí puede).
+export function nfcUnavailableReason(): string | null {
+  if (nfcSupported()) return null;
+  if (!(globalThis as { isSecureContext?: boolean }).isSecureContext) return "La página debe abrirse con HTTPS.";
+  const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return "El iPhone y el iPad no permiten grabar chips NFC desde el navegador.";
+  if (/Android/.test(ua)) return "Este navegador de Android no incluye Web NFC. Abre el panel en Chrome para Android.";
+  return "Este equipo no puede grabar chips NFC desde el navegador. Abre el panel en Chrome para Android, con el NFC activado.";
+}
+
 function explain(e: unknown): string {
   const name = (e as { name?: string } | null)?.name ?? "";
   switch (name) {

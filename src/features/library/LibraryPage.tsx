@@ -56,7 +56,7 @@ function PasteActivation() {
       )}
       {isIos() && isStandalone() && (
         <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-          Esta app instalada guarda sus documentos aparte de Safari. Para activar uno nuevo, pega el enlace en «Activar con un enlace».
+          Esta app instalada guarda sus documentos aparte de Safari. Para activar uno nuevo, escanea el código QR de tu tarjeta o pega el enlace en «Activar con un enlace».
         </div>
       )}
       <button type="button" className="btn btn-secondary w-full" onClick={go}>Continuar</button>
@@ -117,7 +117,7 @@ export default function LibraryPage() {
 
       {docs && docs.length === 0 && !error && (
         <div className="card text-center text-slate-600">
-          Aún no tienes documentos. Acerca tu teléfono al chip o escanea el código QR para activar el primero.
+          Aún no tienes documentos. Acerca tu teléfono al chip o pulsa «Escanear código QR» para activar el primero.
         </div>
       )}
 
@@ -153,6 +153,12 @@ export default function LibraryPage() {
           <button type="button" className="btn btn-primary w-full" onClick={() => void install()}>Instalar</button>
         </div>
       )}
+
+      <div className="card space-y-3">
+        <h2 className="font-semibold">Escanear código QR</h2>
+        <p className="text-sm text-slate-600">¿Tu teléfono no tiene NFC? Escanea el código QR de tu tarjeta aquí mismo.</p>
+        <Link to="/scan" className="btn btn-primary w-full">Escanear código QR</Link>
+      </div>
 
       <PasteActivation />
 
