@@ -127,7 +127,8 @@ export async function markActive(id: string): Promise<void> {
   const database = await getDb();
   const meta = await database.get("documents", id);
   if (!meta) throw new StorageError("idb", "No se encontró el documento guardado.");
-  await database.put("documents", { ...meta, status: "active", activationKey: null });
+  // Se conserva activationKey: así, volver a abrir el mismo enlace (chip o QR) abre el documento directamente.
+  await database.put("documents", { ...meta, status: "active" });
 }
 
 export async function deleteDocument(id: string): Promise<void> {
@@ -151,4 +152,16 @@ export async function verifyDocument(id: string): Promise<boolean> {
   const [meta, blob] = await Promise.all([getMeta(id), getBlob(id)]);
   if (!meta || !blob || blob.size !== meta.size) return false;
   return (await sha256Hex(await blob.arrayBuffer())) === meta.sha256;
+}
+
+// Documento ya activado en este teléfono a partir de este enlace (si existe).
+export async function findActiveByActivation(key: string): Promise<DocMeta | undefined> {
+  const rows = await (await getDb()).getAllFromIndex("documents", "by-activation", key);
+  return rows.filter((d) => d.status === "active").sort((a, b) => b.savedAt.localeCompare(a.savedAt))[0];
+}
+
+// Comprobación rápida (sin recalcular el SHA-256): el archivo existe y su tamaño coincide.
+export async function quickCheck(id: string): Promise<boolean> {
+  const [meta, blob] = await Promise.all([getMeta(id), getBlob(id)]);
+  return !!meta && !!blob && blob.size === meta.size;
 }

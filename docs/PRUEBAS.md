@@ -27,6 +27,7 @@ Leyenda: ✅ verificado automáticamente · 👤 lo confirmas tú en tu disposit
 
 - Panel con lector NFC simulado (Chromium): «Grabar chip NFC» siempre visible, un clic genera el enlace y graba un registro URL, revoca el enlace anterior, no guarda el token en claro, «Verificar chip», QR, tarjeta imprimible, y navegador sin NFC (motivo claro, flujo por QR).
 - Escáner de QR (Chromium con cámara simulada que muestra un QR real): lee el QR y abre la activación, QR ajeno rechazado, foto del código, cámara denegada con alternativa.
+- Abrir directo (Chromium): segunda lectura del chip/QR abre el documento con Internet (sin llamar al servidor) y sin Internet; enlace nuevo sin Internet avisa y se reintenta solo al volver la conexión; archivo guardado dañado se avisa; otro teléfono ve «Enlace ya utilizado».
 
 ## Pruebas que solo puedes hacer tú (hardware)
 1. ⏳ Grabar un chip desde el panel (Chrome en Android, NFC activado) y pulsar «Verificar chip».
@@ -37,7 +38,8 @@ Leyenda: ✅ verificado automáticamente · 👤 lo confirmas tú en tu disposit
 6. ⏳ Cambio de teléfono: generar un enlace nuevo y activar en otro dispositivo; el anterior queda «Reemplazado».
 7. ⏳ Cámara real: «Escanear código QR» en Mis documentos con el QR de una tarjeta impresa.
 8. ⏳ Imprimir la tarjeta con QR en papel y escanearla.
-9. ⏳ Actualización: tras publicar una versión nueva debe aparecer «Hay una versión nueva de MotoBite» con el botón Actualizar.
+9. ⏳ Con el documento ya activado, tocar el chip o escanear el QR otra vez, con Internet y en modo avión: debe abrir el documento directamente.
+10. ⏳ Actualización: tras publicar una versión nueva debe aparecer «Hay una versión nueva de MotoBite» con el botón Actualizar.
 
 ## Limitaciones de la prueba automática
 - No se probó en Safari/iOS, con chips físicos ni con la cámara o la impresora de un teléfono real: se usaron un lector NFC simulado y una cámara simulada.

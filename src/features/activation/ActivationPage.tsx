@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getStatus,
   releaseActivation,
@@ -7,7 +7,7 @@ import {
   type BlockedReason,
   type ReserveOk
 } from "../../lib/activation";
-import { deletePendingByActivation } from "../../lib/idb";
+import { deletePendingByActivation, findActiveByActivation, quickCheck } from "../../lib/idb";
 import { clearReservation, readReservation, saveReservation } from "../../lib/reservation";
 import { formatDate, STATUS_STYLE } from "../../lib/status";
 import { Badge, ErrorBox, Spinner } from "../../components/ui";
@@ -25,7 +25,9 @@ type View =
   | { kind: "ready"; name: string; description: string; expiresAt: string }
   | { kind: "reserving" }
   | { kind: "reserved"; info: ReserveOk }
-  | { kind: "lapsed" };
+  | { kind: "lapsed" }
+  | { kind: "offline" }
+  | { kind: "damaged" };
 
 const BLOCKED: Record<BlockedReason, { title: string; body: string }> = {
   not_found: {
@@ -57,6 +59,7 @@ const BLOCKED: Record<BlockedReason, { title: string; body: string }> = {
 export default function ActivationPage() {
   const { token = "" } = useParams();
   const activationKey = token.slice(0, 16);
+  const navigate = useNavigate();
   const [view, setView] = useState<View>({ kind: "loading" });
   const needsIosGuide = isIosBrowserTab();
   const [ackSafari, setAckSafari] = useState(false);
@@ -67,6 +70,27 @@ export default function ActivationPage() {
       return;
     }
     setView({ kind: "loading" });
+
+    // 1) ¿Este teléfono ya tiene el documento de este enlace? Se abre directo, con o sin Internet.
+    try {
+      const local = await findActiveByActivation(activationKey);
+      if (local) {
+        if (await quickCheck(local.id)) {
+          navigate(`/library/${local.id}`, { replace: true });
+          return;
+        }
+        setView({ kind: "damaged" });
+        return;
+      }
+    } catch {
+      /* sin almacenamiento disponible: se continúa con el flujo normal */
+    }
+
+    // 2) Sin documento local y sin conexión: no se puede activar por primera vez.
+    if (!navigator.onLine) {
+      setView({ kind: "offline" });
+      return;
+    }
 
     // Si el cliente ya tenía una reserva vigente (recargó o cerró la página), la retoma.
     const stored = readReservation(token);
@@ -94,11 +118,40 @@ export default function ActivationPage() {
     } else {
       setView({ kind: "ready", name: s.name, description: s.description, expiresAt: s.expiresAt });
     }
-  }, [token, activationKey]);
+  }, [token, activationKey, navigate]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Si la conexión vuelve mientras se muestra un aviso de red, se reintenta solo. El aviso «online» del navegador puede
+  // llegar antes de que la red esté lista, por eso se espera un momento y, si hace falta, se reintenta cada pocos segundos
+  // (máximo 6 veces).
+  const autoTries = useRef(0);
+  useEffect(() => {
+    if (view.kind !== "offline" && view.kind !== "error") {
+      autoTries.current = 0;
+      return;
+    }
+    let timer = 0;
+    const attempt = () => {
+      if (autoTries.current >= 6) return;
+      autoTries.current += 1;
+      void load();
+    };
+    const onOnline = () => {
+      timer = window.setTimeout(attempt, 800);
+    };
+    window.addEventListener("online", onOnline);
+    const poll = window.setInterval(() => {
+      if (navigator.onLine) attempt();
+    }, 5000);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.clearTimeout(timer);
+      window.clearInterval(poll);
+    };
+  }, [view.kind, load]);
 
   async function start() {
     setView({ kind: "reserving" });
@@ -146,6 +199,29 @@ export default function ActivationPage() {
         <div className="card space-y-4">
           <ErrorBox message={view.message} />
           <button type="button" className="btn btn-primary w-full" onClick={() => void load()}>Reintentar</button>
+          <Link to="/library" className="btn btn-secondary w-full">Ir a Mis documentos</Link>
+        </div>
+      )}
+
+      {view.kind === "offline" && (
+        <div className="card space-y-3 text-center">
+          <h1 className="text-xl font-bold">Sin conexión</h1>
+          <p className="text-slate-600">
+            Este documento todavía no está activado en este teléfono y, para activarlo por primera vez, necesitas Internet.
+            Se reintentará solo cuando vuelva la conexión.
+          </p>
+          <button type="button" className="btn btn-primary w-full" onClick={() => void load()}>Reintentar</button>
+          <Link to="/library" className="btn btn-secondary w-full">Ir a Mis documentos</Link>
+        </div>
+      )}
+
+      {view.kind === "damaged" && (
+        <div className="card space-y-3 text-center">
+          <h1 className="text-xl font-bold">Documento incompleto en este teléfono</h1>
+          <p className="text-slate-600">
+            Este enlace ya se activó aquí, pero el archivo guardado falta o está dañado. Pide a quien te lo entregó una nueva activación.
+          </p>
+          <Link to="/library" className="btn btn-secondary w-full">Ir a Mis documentos</Link>
         </div>
       )}
 
